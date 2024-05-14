@@ -16,13 +16,28 @@ class TransactionCommissionService
 
     public function calculateCommission(TransactionInterface $transaction): float
     {
-        $commissionRate = $this->strategyManager->getCommissionCoefficient($transaction);
-        $exchangeRate = $this->currencyRatesProvider->getExchangeRate($transaction->getCurrency());
+        try {
+            $commissionRate = $this->strategyManager->getCommissionCoefficient($transaction);
+            $exchangeRate = $this->currencyRatesProvider->getExchangeRate($transaction->getCurrency());
+            $commission = $this->calculateRawCommission($transaction->getAmount(), $exchangeRate, $commissionRate);
 
-        $commission = $transaction->getAmount() * $exchangeRate * $commissionRate;
+            return $this->roundUpCommission($commission);
+        } catch (\Exception $e) {
+            echo'Error calculating commission: ' . $e->getMessage() ."\n";
+            return 0;
+        }
+    }
 
-        $commission = ceil($commission * 100) / 100;
+    private function calculateRawCommission(float $amount, float $exchangeRate, float $commissionRate): float
+    {
+        if ($amount <= 0 || $exchangeRate <= 0 || $commissionRate <= 0) {
+            throw new \Exception('Invalid parameters for commission calculation');
+        }
+        return $amount * $exchangeRate * $commissionRate;
+    }
 
-        return $commission;
+    private function roundUpCommission(float $commission): float
+    {
+        return ceil($commission * 100) / 100;
     }
 }

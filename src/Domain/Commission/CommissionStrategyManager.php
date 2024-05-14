@@ -27,6 +27,6 @@ class CommissionStrategyManager
             }
         }
 
-        return 1;
+        throw new \Exception('No commission strategy found for the transaction.');
     }
 }
